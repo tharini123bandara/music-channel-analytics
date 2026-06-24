@@ -11,6 +11,11 @@ import plotly.express as px
 
 DB_NAME = "music_analytics.db"
 
+# Note: this dashboard reads from the SQLite database file (music_analytics.db),
+# which must be committed to the repo so the deployed app has data to show.
+# The YOUTUBE_API_KEY itself isn't needed here since we're not calling the
+# API live -- it's only used by fetch_data.py when refreshing the dataset.
+
 # ---- Page config (must be first Streamlit command) ----
 st.set_page_config(
     page_title="Music Channel Analytics",
@@ -25,15 +30,25 @@ def load_data():
     conn = sqlite3.connect(DB_NAME)
     channels_df = pd.read_sql_query("SELECT * FROM channels", conn)
     videos_df = pd.read_sql_query("SELECT * FROM videos", conn)
+
+    # Read the last-updated timestamp recorded at fetch time, if it exists.
+    try:
+        metadata_df = pd.read_sql_query(
+            "SELECT value FROM metadata WHERE key = 'last_updated'", conn
+        )
+        last_updated_raw = metadata_df["value"].iloc[0] if len(metadata_df) > 0 else None
+    except Exception:
+        last_updated_raw = None
+
     conn.close()
 
     # Convert publish_date text into a real datetime so we can group by month
     videos_df["publish_date"] = pd.to_datetime(videos_df["publish_date"])
 
-    return channels_df, videos_df
+    return channels_df, videos_df, last_updated_raw
 
 
-channels_df, videos_df = load_data()
+channels_df, videos_df, last_updated_raw = load_data()
 
 # ---- Sidebar navigation ----
 st.sidebar.title("🎵 Music Analytics")
@@ -41,6 +56,14 @@ st.sidebar.title("🎵 Music Analytics")
 if st.sidebar.button("🔄 Refresh data"):
     st.cache_data.clear()
     st.rerun()
+
+# Display a human-readable "Data last updated" label so freshness is
+# obvious at a glance, instead of needing to compare raw numbers by hand.
+if last_updated_raw and last_updated_raw != "unknown":
+    fetched_dt = pd.to_datetime(last_updated_raw)
+    st.sidebar.caption(f"📅 Data last updated:\n{fetched_dt.strftime('%b %d, %Y at %H:%M UTC')}")
+else:
+    st.sidebar.caption("📅 Data last updated: unknown")
 
 page = st.sidebar.radio(
     "Navigate to:",

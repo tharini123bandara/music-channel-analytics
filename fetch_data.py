@@ -5,6 +5,7 @@ using the YouTube Data API, and save results into CSV files.
 
 import os
 import time
+from datetime import datetime, timezone
 import pandas as pd
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
@@ -146,7 +147,14 @@ def main():
     channels_df.to_csv("data/channels.csv", index=False)
     videos_df.to_csv("data/videos.csv", index=False)
 
+    # Record exactly when this fetch completed, so the dashboard can later
+    # show "Data last updated: ..." instead of leaving people guessing.
+    fetched_at = datetime.now(timezone.utc).isoformat()
+    with open("data/last_updated.txt", "w") as f:
+        f.write(fetched_at)
+
     print(f"\n🎉 Done! Saved {len(channels_df)} channels and {len(videos_df)} videos to /data")
+    print(f"   Fetch timestamp recorded: {fetched_at}")
 
 
 if __name__ == "__main__":

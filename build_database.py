@@ -45,8 +45,33 @@ def create_database():
         )
     """)
 
+    # ---- Create metadata table ----
+    # A tiny key-value table for things like "when was this data last fetched".
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    """)
+
     conn.commit()
     return conn
+
+
+def load_last_updated_timestamp(conn):
+    """Read the timestamp written by fetch_data.py and store it in the
+    metadata table so the dashboard can display it."""
+    try:
+        with open("data/last_updated.txt", "r") as f:
+            timestamp = f.read().strip()
+    except FileNotFoundError:
+        timestamp = "unknown"
+
+    conn.execute(
+        "INSERT OR REPLACE INTO metadata (key, value) VALUES ('last_updated', ?)",
+        (timestamp,)
+    )
+    conn.commit()
 
 
 def load_csv_into_tables(conn):
@@ -71,4 +96,5 @@ def load_csv_into_tables(conn):
 if __name__ == "__main__":
     conn = create_database()
     load_csv_into_tables(conn)
+    load_last_updated_timestamp(conn)
     conn.close()
