@@ -4,7 +4,7 @@ name: Daily Data Refresh
 # manually from the GitHub Actions tab for testing.
 on:
   schedule:
-    - cron: "32 10 * * *"
+    - cron: "5 11 * * *"
   workflow_dispatch:
 
 # Grant write access so this workflow can push its data-refresh commit
