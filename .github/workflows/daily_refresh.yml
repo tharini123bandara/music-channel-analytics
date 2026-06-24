@@ -1,5 +1,8 @@
 name: Daily Data Refresh
 
+permissions:
+  contents: write
+
 # Runs automatically every day at 06:00 UTC, and can also be triggered
 # manually from the GitHub Actions tab for testing.
 on:
