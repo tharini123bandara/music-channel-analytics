@@ -81,8 +81,10 @@ def get_video_stats(video_ids, channel_id, channel_name):
 
     for i in range(0, len(video_ids), 50):
         batch = video_ids[i:i + 50]
+        # "contentDetails" gives us video duration (used to detect Shorts)
+        # "snippet" already gives us liveBroadcastContent (used to detect Live videos)
         request = youtube.videos().list(
-            part="snippet,statistics",
+            part="snippet,statistics,contentDetails",
             id=",".join(batch)
         )
         response = request.execute()
@@ -98,6 +100,9 @@ def get_video_stats(video_ids, channel_id, channel_name):
                 "views": int(stats.get("viewCount", 0)),
                 "likes": int(stats.get("likeCount", 0)),  # some videos hide like count
                 "comments": int(stats.get("commentCount", 0)),  # some videos disable comments
+                "duration": item["contentDetails"].get("duration", ""),  # e.g. "PT3M45S"
+                # "none" = regular upload, "live" = currently live, "upcoming" = scheduled live
+                "live_broadcast_content": item["snippet"].get("liveBroadcastContent", "none"),
             })
 
     return all_video_data
