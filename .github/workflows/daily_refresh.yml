@@ -1,14 +1,16 @@
 name: Daily Data Refresh
 
-permissions:
-  contents: write
-
 # Runs automatically every day at 06:00 UTC, and can also be triggered
 # manually from the GitHub Actions tab for testing.
 on:
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
+
+# Grant write access so this workflow can push its data-refresh commit
+# back to the repo. By default GITHUB_TOKEN is read-only.
+permissions:
+  contents: write
 
 jobs:
   refresh-data:
@@ -43,4 +45,5 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data/ music_analytics.db
           git diff --staged --quiet || git commit -m "Automated daily data refresh"
+          git pull --rebase origin main
           git push
