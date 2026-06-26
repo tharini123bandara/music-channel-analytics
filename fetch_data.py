@@ -28,8 +28,14 @@ CHANNELS = {
 }
 
 
-def get_channel_stats(channel_id):
-    """Fetch subscriber count, total views, and video count for one channel."""
+def get_channel_stats(channel_id, channel_name):
+    """Fetch subscriber count, total views, and video count for one channel.
+    We pass in our own `channel_name` (from the CHANNELS dict) rather than
+    using YouTube's raw API title (item["snippet"]["title"]), because that
+    raw title can differ from the name we use elsewhere -- e.g. YouTube's
+    API returns "BANGTANTV" for BTS's channel, not "BANGTANTV (BTS)". Using
+    two different names for the same channel across channels.csv and
+    videos.csv silently breaks any join/filter between the two tables."""
     request = youtube.channels().list(
         part="snippet,statistics,contentDetails",
         id=channel_id
@@ -43,7 +49,7 @@ def get_channel_stats(channel_id):
     item = response["items"][0]
     return {
         "channel_id": channel_id,
-        "channel_name": item["snippet"]["title"],
+        "channel_name": channel_name,
         "subscribers": int(item["statistics"].get("subscriberCount", 0)),
         "total_views": int(item["statistics"].get("viewCount", 0)),
         "video_count": int(item["statistics"].get("videoCount", 0)),
@@ -117,7 +123,7 @@ def main():
         print(f"\n📡 Fetching data for {channel_name}...")
 
         # 1. Channel-level stats
-        channel_data = get_channel_stats(channel_id)
+        channel_data = get_channel_stats(channel_id, channel_name)
         if not channel_data:
             continue
         channel_records.append(channel_data)
